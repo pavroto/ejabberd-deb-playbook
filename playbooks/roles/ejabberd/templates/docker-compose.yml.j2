@@ -1,0 +1,29 @@
+version: '3.8'
+
+services:
+  main:
+    image: ghcr.io/processone/ejabberd:{{ ejabberd_version }}
+    container_name: ejabberd
+    environment:
+      - EJABBERD_MACRO_HOST=example.com
+      - EJABBERD_MACRO_ADMIN=admin@example.com
+      - REGISTER_ADMIN_PASSWORD=somePassw0rd
+      - CTL_ON_START=registered_users example.com ;
+                     status
+    ports:
+      - "5222:5222"
+      - "5269:5269"
+      - "5280:5280"
+      - "5443:5443"
+    volumes:
+      - ./conf/ejabberd.yml:/opt/ejabberd/conf/ejabberd.yml:ro
+      - ./database:/opt/ejabberd/database
+
+    depends_on:
+      - db
+  db:
+    image: 
+
+networks:
+  ejabberd-network:
+   driver: 

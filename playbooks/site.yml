@@ -1,0 +1,16 @@
+---
+  - name: Common configuration
+    hosts: all
+    become: true
+    roles:
+      - common
+    tags:
+      - common
+  
+  - name: Openfire setup 
+    hosts: openfire_server
+    become: true
+    roles:
+      - openfire
+    tags:
+      - openfire

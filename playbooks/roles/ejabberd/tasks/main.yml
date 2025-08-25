@@ -1,0 +1,22 @@
+# -------------------------------------------------------- #
+# Download openfire
+
+- name: Create openfire directory
+  ansible.builtin.file:
+    path: "{{ ejabberd_directory }}"
+    state: directory
+    mode: 0700
+    owner: root
+    group: root
+
+- name: Tempalte docker compose file
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ ejabberd_directory }}/docker-compose.yml"
+    mode: 0600
+    owner: root
+    group: root
+
+
+
+# -------------------------------------------------------- #

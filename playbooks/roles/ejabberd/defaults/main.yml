@@ -1,0 +1,8 @@
+# General
+ejabberd_directory: "/opt/ejabberd"
+domain: "{{ lookup('ansible.builtin.env', 'K3S_DATABASE_TYPE') }}" 
+
+# Docker
+ejabberd_tag: "25.08"
+postgres_tag: "13.22-alpine3.22"
+

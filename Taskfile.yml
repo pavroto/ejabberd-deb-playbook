@@ -1,0 +1,87 @@
+version: '3'
+
+dotenv: [ '.env' ]
+
+vars:
+  ANSIBLE_DEFAULT_COMMAND: ansible-playbook -i inventory/hosts.json
+  ANSIBLE_BECOME_PASSWORD_FILENAME: .become_password
+  ANSIBLE_CONNECTION_PASSWORD_FILENAME: .connection_password
+
+tasks:
+  show-inventory:
+    desc: Show Ansible inventory graph.
+    silent: true
+    dir: "{{.TASKFILE_DIR}}"
+    cmds:
+      - ansible-inventory -i inventory/hosts.json --graph {{.CLI_ARGS}}
+
+  show-inventory-vars:
+    desc: Show Ansible inventory graph and associated variables.
+    silent: true
+    dir: "{{.TASKFILE_DIR}}"
+    cmds:
+      - ansible-inventory -i inventory/hosts.json --graph --vars {{.CLI_ARGS}}
+  
+  generate-inventory:
+    desc: Generate Ansible inventory.
+    silent: true
+    dir: "{{.TASKFILE_DIR}}"
+    cmds:
+      - python3 scripts/generate-inventory.py
+      - task: show-inventory-vars
+    generates:
+      - ./inventory/hosts.json
+
+  deploy:
+    desc: Deploy 
+    silent: true
+    dir:  "{{.TASKFILE_DIR}}"
+    cmds:
+      - task: i_setup_become_password
+      - defer: { task: i_cleanup_become_password }
+      - task: i_setup_connection_password
+      - defer: { task: i_cleanup_connection_password }
+      - |
+        if [[ -n $ANSIBLE_SUDO_PASSWORD ]]; then
+          ANSIBLE_SUDO_PASSWORD_ARGUMENT="--become-password-file {{.ANSIBLE_BECOME_PASSWORD_FILENAME}}"
+        fi
+        if [[ -n $ANSIBLE_CONNECTION_PASSWORD ]]; then
+          ANSIBLE_CONNECTION_PASSWORD_ARGUMENT="--connection-password-file {{.ANSIBLE_CONNECTION_PASSWORD_FILENAME}}"
+        fi
+        {{.ANSIBLE_DEFAULT_COMMAND}} playbooks/site.yml $ANSIBLE_SUDO_PASSWORD_ARGUMENT $ANSIBLE_CONNECTION_PASSWORD_ARGUMENT {{.CLI_ARGS}}
+
+  i_setup_become_password:
+    silent: true
+    internal: true
+    dir: "{{.TASKFILE_DIR}}"
+    precondition: test -n $ANSIBLE_SUDO_PASSWORD
+    cmds:
+      - touch {{.ANSIBLE_BECOME_PASSWORD_FILENAME}} 
+      - chmod 600 {{.ANSIBLE_BECOME_PASSWORD_FILENAME}}
+      - echo $ANSIBLE_SUDO_PASSWORD > {{.ANSIBLE_BECOME_PASSWORD_FILENAME}}
+
+  i_cleanup_become_password:
+    silent: true
+    internal: true
+    dir: "{{.TASKFILE_DIR}}"
+    precondition: test -f {{.ANSIBLE_BECOME_PASSWORD_FILENAME}}
+    cmds:
+      - rm {{.ANSIBLE_BECOME_PASSWORD_FILENAME}}
+
+  i_setup_connection_password:
+    silent: true 
+    internal: true
+    dir: "{{ .TASKFILE_DIR }}"
+    precondition: test -n $ANSIBLE_CONNECTION_PASSWORD
+    cmds:
+      - touch {{.ANSIBLE_CONNECTION_PASSWORD_FILENAME}} 
+      - chmod 600 {{.ANSIBLE_CONNECTION_PASSWORD_FILENAME}}
+      - echo $ANSIBLE_CONNECTION_PASSWORD > {{.ANSIBLE_CONNECTION_PASSWORD_FILENAME}}
+
+  i_cleanup_connection_password:
+    silent: true 
+    internal: true
+    dir: "{{ .TASKFILE_DIR }}"
+    precondition: test -f {{.ANSIBLE_CONNECTION_PASSWORD_FILENAME}}
+    cmds:
+      - rm {{.ANSIBLE_CONNECTION_PASSWORD_FILENAME}}
